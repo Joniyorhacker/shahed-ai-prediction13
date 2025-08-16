@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import random
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
@@ -23,21 +24,21 @@ logging.basicConfig(
 # -------------------------------
 signal_running = False
 current_chat_id = None
+preyod_number = 1  # Market period number
+last_number = None
 
 # -------------------------------
 # Commands
 # -------------------------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        f"🤖 Welcome to SHAHED AI PREDICTION BOT\n\n"
-        f"🔹 This bot gives Wingo 1-min live signals.\n"
+        f"🤖 SHAHED AI PREDICTION BOT\n\n"
+        f"🔹 Auto signal bot for DK WIN\n"
         f"🔹 Owner: @shahedbintarek\n"
         f"🔹 Join via link: {REF_LINK}\n\n"
         f"Commands:\n"
-        f"/signal_on - Start auto signals\n"
-        f"/signal_off - Stop auto signals\n"
-        f"/win - Mark last signal as WIN\n"
-        f"/loss - Mark last signal as LOSS"
+        f"/signal_on - Start auto signals in this group\n"
+        f"/signal_off - Stop auto signals"
     )
 
 async def signal_on(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -52,13 +53,6 @@ async def signal_off(update: Update, context: ContextTypes.DEFAULT_TYPE):
     signal_running = False
     await update.message.reply_text("🛑 Auto Signal Stopped")
 
-async def win(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("✅ WIN — Next Ready")
-
-async def loss(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # নতুন সিগন্যাল দিবে, কিছু এক্সট্রা লিখবে না
-    await send_signal(update.effective_chat.id, context)
-
 # -------------------------------
 # Signal System
 # -------------------------------
@@ -66,18 +60,29 @@ async def auto_signal(context: ContextTypes.DEFAULT_TYPE):
     global signal_running, current_chat_id
     while signal_running and current_chat_id:
         await send_signal(current_chat_id, context)
-        await asyncio.sleep(60)  # প্রতি ১ মিনিট পর নতুন সিগন্যাল
+        await asyncio.sleep(60)  # প্রতি ১ মিনিটে নতুন signal
 
 async def send_signal(chat_id, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(
-        chat_id=chat_id,
-        text=(
-            "📊 SHAHED AI PREDICTION\n\n"
-            "BET: SMALL (1,3,5,7,9)\n"
-            "STEP MAINTAIN: 8\n\n"
-            "✅ Go Safe!"
-        )
+    global preyod_number, last_number
+
+    # Random number generate
+    number = random.randint(0, 9)
+    last_number = number
+
+    # Small/Big logic
+    bet = "SMALL" if number % 2 == 1 else "BIG"
+
+    message = (
+        f"📊 SHAHED AI PREDICTION BOT\n\n"
+        f"Preyod number - {preyod_number}\n"
+        f"BET - {bet}\n"
+        f"Number - {number}\n"
+        f"Maintain - 8 level\n\n"
+        f"🔹 Join - {REF_LINK}"
     )
+
+    await context.bot.send_message(chat_id=chat_id, text=message)
+    preyod_number += 1  # Market period auto increase
 
 # -------------------------------
 # Main Runner
@@ -88,8 +93,6 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("signal_on", signal_on))
     app.add_handler(CommandHandler("signal_off", signal_off))
-    app.add_handler(CommandHandler("win", win))
-    app.add_handler(CommandHandler("loss", loss))
 
     print("✅ SHAHED AI Bot is running...")
     app.run_polling()
